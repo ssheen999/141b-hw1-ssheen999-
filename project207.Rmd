@@ -1,0 +1,135 @@
+---
+title: "Code"
+author: ""
+date: ""
+output: pdf_document
+---
+
+Dataset
+```{r,message=FALSE}
+library("gdata")
+```
+```{r}
+survival = read.xls("survival_sparrow.xls",header = T)
+survival
+sapply(survival,class)
+survival$AG=as.factor(survival$AG)
+
+```
+
+```{r}
+plot(survival[,2:11])
+```
+```{r}
+cor(survival[,3:11])
+```
+
+null model (forward)
+```{r}
+survival$STATUS = as.factor(survival$STATUS)
+fit.null=glm(STATUS~1, data=survival, 
+             family=binomial)
+fit.forward=step(fit.null, 
+                scope=~AG+TL+AE+WT+BH+HL+FL+TT+SK+KL,
+                direction='forward')
+summary(fit.forward)
+
+```
+
+Backward method
+```{r}
+fit.full=glm(STATUS~., data=survival, 
+             family=binomial)
+fit.back = step(fit.full, scope=~AG+TL+AE+WT+BH+HL+FL+TT+SK+KL,
+                direction='back')
+summary(fit.back)
+
+```
+Both method
+```{r}
+
+fit.both = step(fit.null, scope=~AG+TL+AE+WT+BH+HL+FL+TT+SK+KL,
+                direction='both')
+summary(fit.both)
+
+```
+
+Based on the R outputs, we can fit model with four main effects
+```{r}
+fit.final = glm(STATUS~TL+HL+WT+KL, data = survival, family = binomial)
+summary(fit.final)
+```
+
+# Two-way interaction terms and Quadratic terms
+```{r}
+fit.2way=step(fit.final, scope=~(TL+HL+WT+KL)^2+I(TL^2)+I(HL^2)+I(WT^2)+I(KL^2), 
+              direction = 'both')
+summary(fit.2way)
+
+```
+
+# Residual Analysis
+```{r,message=FALSE}
+library(car)
+```
+```{r}
+residualPlots(fit.final)
+```
+
+The residual plot can only reflect the overal model fit. The following sections tend to find out outliers, leverage and influence.
+
+# Outliers
+```{r}
+outlierTest(fit.final)
+```
+
+# influence plot
+```{r}
+influencePlot(fit.final, col = "red",id.n =3)
+```
+
+
+```{r}
+model69 = update(fit.final,subset=c(-27))
+compareCoefs(fit.final,model69)
+```
+
+# Interpretations
+```{r}
+#TL
+exp(fit.final$coef[2])
+# lower bound
+exp(fit.final$coef[2]-1.96*0.168)
+# upper bound
+exp(fit.final$coef[2]+1.96*0.168)
+
+#HL
+exp(fit.final$coef[3])
+# lower bound
+exp(fit.final$coef[3]-1.96*20.764)
+# upper bound
+exp(fit.final$coef[3]+1.96*20.764)
+
+#WT
+exp(fit.final$coef[4])
+# lower bound
+exp(fit.final$coef[4]-1.96*0.310)
+# upper bound
+exp(fit.final$coef[4]+1.96*0.310)
+
+#KL
+exp(fit.final$coef[5])
+# lower bound
+exp(fit.final$coef[5]-1.96*11.778)
+# upper bound
+exp(fit.final$coef[4]+1.96*11.778)*1000
+
+```
+
+
+
+
+
+
+
+
